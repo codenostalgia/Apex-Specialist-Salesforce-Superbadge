@@ -1,0 +1,60 @@
+public  class MaintenanceRequestHelper {
+    
+    public static List<List<sObject>> updateWorkOrders(Case c, Equipment_Maintenance_Item__c[] emi, List<Product2> allequip) {
+        
+        Case newcase = new Case(Type='Routine Maintenance',
+                               Status='New',
+                               origin='Phone',
+                               Date_Reported__c=Date.today());
+        
+        newcase.Vehicle__c = c.Vehicle__c;
+   
+		List<id> myeqids = new List<id>();
+
+        for(Equipment_Maintenance_Item__c e: emi){
+            if(e.Maintenance_Request__c == c.id){
+                myeqids.add(e.Equipment__c);
+            }
+        }
+        
+        List<Product2> myeq = new List<Product2>();
+        
+        for(id eid : myeqids){
+            for(Product2 p : allequip){
+                if(eid==p.id){
+                    myeq.add(p);
+                    continue;
+                }
+            }
+        }
+
+        decimal min = findmincycle(myeq);
+        
+        newcase.Date_Due__c = Date.today().addDays((integer)min);
+        
+        newcase.Subject = 'Follow up Routine Maintenance for case: '+c.id;
+        
+        List<case> mycaselist = new List<case>();
+        mycaselist.add(newcase);
+        
+        List<List<sobject>> retlist = new List<List<sobject>>();
+        retlist.add(mycaselist);
+        retlist.add(myeq);
+        
+        return retlist;
+    }     
+    
+    public static decimal findmincycle(List<Product2> myeq){
+        decimal ret =99999999;
+        
+        for(Product2 e: myeq){
+            if(e.Maintenance_Cycle__c<ret){
+                ret = e.Maintenance_Cycle__c;
+            }
+        }
+        
+        
+        return ret;
+    }
+    
+}

@@ -1,0 +1,73 @@
+@isTest
+public class MaintenanceRequestHelperTest {
+     
+    @testSetup
+    public static void doingSetup(){
+        
+        Case c = new Case();
+  
+        c.Status = 'New';
+        c.type = 'Repair';
+        c.origin = 'Phone';
+        c.Date_Reported__c = Date.today();
+        
+        Vehicle__c v = new Vehicle__c(Name='Abhi ki Bike');
+        insert v;
+        
+        c.Vehicle__c = v.id;
+        insert c;
+        
+        product2 e1 = new product2();
+        e1.name = 'Mirror';
+        e1.Maintenance_Cycle__c = 15;
+        e1.Replacement_Part__c = true;
+        
+        product2 e2 = new product2();
+        e2.name = 'Dome';
+        e2.Maintenance_Cycle__c = 25;
+        e2.Replacement_Part__c = true;
+        
+        insert e1;
+        insert e2;
+        
+        Equipment_Maintenance_Item__c emi1 = new Equipment_Maintenance_Item__c();
+        Equipment_Maintenance_Item__c emi2 = new Equipment_Maintenance_Item__c();
+   
+        emi1.Maintenance_Request__c = c.id;
+        emi1.Equipment__c = e1.id;
+        
+        emi2.Maintenance_Request__c = c.id;
+        emi2.Equipment__c = e2.id;
+        
+        insert emi1;
+        insert emi2;   
+    }
+    
+    @isTest
+    public static void mainTests(){
+        
+       List<case> mycases1 = [Select Status, type, Date_Reported__c,Date_Due__c, Vehicle__c from case];
+		
+		System.assertEquals(1, mycases1.size());
+        
+        mycases1[0].status = 'Working';
+        update mycases1;
+        
+        List<case> mycases2 = [Select Status, type, Date_Reported__c,Date_Due__c, Vehicle__c from case];
+        
+        System.assertEquals(1, mycases2.size());
+
+        mycases2[0].status = 'Closed';
+        update mycases2;
+        
+        List<case> mycases3 = [Select Status, type, Date_Reported__c, Date_Due__c, Vehicle__c from case];
+        
+        System.assertEquals(2, mycases3.size());
+       
+        System.assertEquals(mycases3[0].Vehicle__c, mycases3[1].Vehicle__c);
+        
+        System.assertEquals(Date.today().addDays(15), mycases3[1].Date_Due__c);
+        
+    }
+  
+}

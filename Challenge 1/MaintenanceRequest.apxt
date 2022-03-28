@@ -1,0 +1,36 @@
+trigger MaintenanceRequest on Case (after update) {
+
+    List<Case> newcases = new List<Case>();
+    List<List<Product2>> myitems = new List<List<Product2>>();
+    List<Equipment_Maintenance_Item__c> newmyitems = new List<Equipment_Maintenance_Item__c>();
+    
+    Equipment_Maintenance_Item__c[] emi = [select Equipment__c, Maintenance_Request__c from Equipment_Maintenance_Item__c];
+    List<Product2> allequip = [select id,Maintenance_Cycle__c from Product2];
+    
+    for(Case c: Trigger.new){
+        
+        if((c.type=='Repair' || c.type=='Routine Maintenance') && c.Status == 'Closed'){
+            
+            List<List<sObject>> mylist = MaintenanceRequestHelper.updateWorkOrders(c, emi, allequip);
+            
+            newcases.add((case)mylist[0][0]);
+            myitems.add(mylist[1]);              
+        }
+        
+    }
+    
+    insert newcases;
+    
+    for(integer i=0; i<newcases.size(); i++){
+        
+        for(Product2 e: myitems[i]){
+                Equipment_Maintenance_Item__c eitem = new Equipment_Maintenance_Item__c();
+                eitem.Maintenance_Request__c = newcases[i].Id;
+                eitem.Equipment__c = e.id;
+                newmyitems.add(eitem);
+            }
+    }
+   
+    insert newmyitems;
+    
+}

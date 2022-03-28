@@ -1,0 +1,45 @@
+public class WarehouseCalloutService implements Queueable, Database.AllowsCallouts{
+    
+    private static final String WAREHOUSE_URL = 'https://th-superbadge-apex.herokuapp.com/equipment';
+    
+    public static void execute(System.QueueableContext c) {
+        
+        System.debug('Came Here');
+        
+        Http ht = new Http();
+        
+        HttpRequest request = new HttpRequest();
+        
+        request.setEndpoint(WAREHOUSE_URL);
+        
+        request.setMethod('GET');
+        
+        HttpResponse response = ht.send(request);
+        
+        request.setHeader('Content-Type', 'application/json;charset=UTF-8');
+        
+        System.debug('Received Response');
+        
+        System.debug(response.getBody());
+        
+       List<Object> data = (List<Object>)(JSON.deserializeUntyped(response.getBody()));
+        
+        List<product2> myeq = new List<Product2>();
+		
+        for(Object obj: data){
+            Map<String,Object> mymap = (Map<String,Object>)obj;
+            
+            Product2 p = new Product2();
+            p.Replacement_Part__c = true;
+            p.Cost__c = (decimal)mymap.get('cost');
+            p.Lifespan_Months__c = (decimal)mymap.get('lifespan');
+            p.Maintenance_Cycle__c = (decimal)mymap.get('maintenanceperiod');
+            p.Warehouse_SKU__c = (String)mymap.get('sku');
+            p.Current_Inventory__c = (decimal)mymap.get('quantity');
+            p.Name = (String)mymap.get('name');
+            myeq.add(p);
+        }
+        
+        upsert myeq Warehouse_SKU__c;
+    }
+}
